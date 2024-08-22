@@ -1,0 +1,29 @@
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+
+# Define the default arguments for the DAG
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2023, 1, 1),
+    'retries': 1,
+}
+
+# Define the DAG
+with DAG(
+    dag_id='hello_world_dag',
+    default_args=default_args,
+    description='A simple Hello World DAG',
+    schedule_interval='@daily',  # Run the DAG daily
+    catchup=False,
+) as dag:
+
+    # Define the task using BashOperator
+    hello_task = BashOperator(
+        task_id='say_hello',
+        bash_command='echo "Hello world"',
+    )
+
+    # Set task dependencies (in this case, only one task so no dependencies)
+    hello_task
