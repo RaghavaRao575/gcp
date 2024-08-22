@@ -1,0 +1,48 @@
+from datetime import datetime
+import pandas as pd
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.providers.google.cloud.operators.gcs import GCSDownloadObjectOperator
+from airflow.models import Variable
+import io
+
+# Define the default arguments for the DAG
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 8, 22),
+    'retries': 1,
+}
+
+# Define the function to read and print the CSV file
+def read_and_print_csv(bucket_name, file_name):
+    gcs_hook = GCSHook()
+    # Download the file from GCS
+    file_obj = gcs_hook.download(bucket_name=bucket_name, object_name=file_name)
+    # Read the CSV file into a pandas DataFrame
+    df = pd.read_csv(io.BytesIO(file_obj))
+    # Print the DataFrame
+    print(df)
+
+# Create the DAG
+with DAG(
+    dag_id='read_csv_from_gcs',
+    default_args=default_args,
+    description='Read a CSV file from GCS and print it',
+    schedule_interval='@daily',
+    catchup=False,
+) as dag:
+
+    # Define the task using PythonOperator
+    read_csv_task = PythonOperator(
+        task_id='read_and_print_csv',
+        python_callable=read_and_print_csv,
+        op_kwargs={
+            'bucket_name': 'your-bucket-name',
+            'file_name': 'path/to/your-file.csv',
+        },
+    )
+
+    # Task dependencies (only one task here)
+    read_csv_task
