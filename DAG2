@@ -2,9 +2,7 @@ from datetime import datetime
 import pandas as pd
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
-from airflow.providers.google.cloud.operators.gcs import GCSDownloadObjectOperator
-from airflow.models import Variable
+from google.cloud import storage
 import io
 
 # Define the default arguments for the DAG
@@ -17,11 +15,17 @@ default_args = {
 
 # Define the function to read and print the CSV file
 def read_and_print_csv(bucket_name, file_name):
-    gcs_hook = GCSHook()
-    # Download the file from GCS
-    file_obj = gcs_hook.download(bucket_name=bucket_name, object_name=file_name)
+    # Initialize a Google Cloud Storage client
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(file_name)
+    
+    # Download the file as a bytes object
+    file_obj = blob.download_as_bytes()
+    
     # Read the CSV file into a pandas DataFrame
     df = pd.read_csv(io.BytesIO(file_obj))
+    
     # Print the DataFrame
     print(df)
 
