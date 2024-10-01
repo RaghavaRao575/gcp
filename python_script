@@ -21,19 +21,22 @@ def search_and_pair_files_by_folder(bucket_name, search_terms):
                 folder_name = '/'.join(blob.name.split('/')[:-1])
                 if folder_name not in folder_files:
                     folder_files[folder_name] = []
-                folder_files[folder_name].append(blob.name)
+                folder_files[folder_name].append(f"gs://{bucket_name}/{blob.name}")
 
-    # Now pair the files in each folder
+    # Now pair the files in each folder and print them in list format
+    paired_files = []
+
     for folder, files in folder_files.items():
         if len(files) >= 2:
             data_file = [file for file in files if file.endswith(search_terms[0])]
             report_file = [file for file in files if file.endswith(search_terms[1])]
-            
+
             if data_file and report_file:
-                print(f"Files in {folder}:")
-                print(f"  Data file: gs://{bucket_name}/{data_file[0]}")
-                print(f"  Report file: gs://{bucket_name}/{report_file[0]}")
-                print()
+                # Add the pair to the list
+                paired_files.append([data_file[0], report_file[0]])
+
+    # Print the result as a list of pairs
+    print(paired_files)
 
 # Replace 'your-bucket-name' with your GCS bucket name
 # Replace ['data_file_1.csv', 'report_1.csv'] with the files you want to pair
