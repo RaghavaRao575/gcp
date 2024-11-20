@@ -1,13 +1,12 @@
 from atlassian import Confluence
-import openai
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
+from transformers import pipeline
 
 # Configuration
 CONFLUENCE_URL = 'https://your-domain.atlassian.net/wiki'
 CONFLUENCE_USERNAME = 'your-email@example.com'
 CONFLUENCE_API_TOKEN = 'your-api-token'
-OPENAI_API_KEY = 'your-openai-api-key'
 
 # Initialize clients
 confluence = Confluence(
@@ -15,7 +14,9 @@ confluence = Confluence(
     username=CONFLUENCE_USERNAME,
     password=CONFLUENCE_API_TOKEN
 )
-openai.api_key = OPENAI_API_KEY
+
+# Initialize Hugging Face Model (use a suitable model)
+qa_pipeline = pipeline("text2text-generation", model="google/flan-t5-base")
 
 # Flask app for the chatbot
 app = Flask(__name__)
@@ -52,17 +53,14 @@ def chat():
     pages = fetch_confluence_pages(space)
     relevant_info = search_confluence(user_query, pages)
 
-    # Generate response using OpenAI GPT
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are an assistant for the company's Confluence knowledge base."},
-            {"role": "user", "content": user_query},
-            {"role": "assistant", "content": f"Here is some relevant information:\n{relevant_info}"}
-        ]
-    )
-    gpt_response = response['choices'][0]['message']['content']
-    return jsonify({'response': gpt_response})
+    # Generate response using Hugging Face model
+    if relevant_info:
+        response = qa_pipeline(f"Answer the query: {user_query} based on: {relevant_info}")
+        chatbot_response = response[0]['generated_text']
+    else:
+        chatbot_response = "Sorry, I couldn't find any relevant information."
+
+    return jsonify({'response': chatbot_response})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
