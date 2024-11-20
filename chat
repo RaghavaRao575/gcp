@@ -1,5 +1,5 @@
 from atlassian import Confluence
-from flask import Flask, request, jsonify
+from flask import Flask, request, render_template_string
 from bs4 import BeautifulSoup
 import spacy
 
@@ -52,22 +52,45 @@ def search_confluence(query, pages):
 
     return "\n\n".join(results) if results else "No relevant information found."
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_query = request.json.get('query', '')
-    space = request.json.get('space', 'YOUR_SPACE')
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        user_query = request.form.get('query', '')
+        space = request.form.get('space', 'YOUR_SPACE')
 
-    # Fetch and search Confluence data
-    pages = fetch_confluence_pages(space)
-    relevant_info = search_confluence(user_query, pages)
+        # Fetch and search Confluence data
+        pages = fetch_confluence_pages(space)
+        relevant_info = search_confluence(user_query, pages)
 
-    # Generate response using spaCy (basic rule-based response)
-    if relevant_info == "No relevant information found.":
-        response_text = "Sorry, I couldn't find any relevant information in Confluence. Could you clarify your question?"
-    else:
-        response_text = f"Here is some relevant information:\n{relevant_info}"
+        # Generate response (basic rule-based response)
+        if relevant_info == "No relevant information found.":
+            response_text = "Sorry, I couldn't find any relevant information in Confluence. Could you clarify your question?"
+        else:
+            response_text = f"Here is some relevant information:\n{relevant_info}"
 
-    return jsonify({'response': response_text})
+        return render_template_string("""
+            <h1>Confluence Chatbot</h1>
+            <form method="POST">
+                <label for="query">Your Question:</label><br>
+                <input type="text" id="query" name="query" required><br><br>
+                <label for="space">Space:</label><br>
+                <input type="text" id="space" name="space" required><br><br>
+                <input type="submit" value="Ask">
+            </form>
+            <h2>Response:</h2>
+            <p>{{ response_text }}</p>
+        """, response_text=response_text)
+    
+    return render_template_string("""
+        <h1>Confluence Chatbot</h1>
+        <form method="POST">
+            <label for="query">Your Question:</label><br>
+            <input type="text" id="query" name="query" required><br><br>
+            <label for="space">Space:</label><br>
+            <input type="text" id="space" name="space" required><br><br>
+            <input type="submit" value="Ask">
+        </form>
+    """)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
