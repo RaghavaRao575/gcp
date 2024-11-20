@@ -1,0 +1,68 @@
+from atlassian import Confluence
+import openai
+from flask import Flask, request, jsonify
+from bs4 import BeautifulSoup
+
+# Configuration
+CONFLUENCE_URL = 'https://your-domain.atlassian.net/wiki'
+CONFLUENCE_USERNAME = 'your-email@example.com'
+CONFLUENCE_API_TOKEN = 'your-api-token'
+OPENAI_API_KEY = 'your-openai-api-key'
+
+# Initialize clients
+confluence = Confluence(
+    url=CONFLUENCE_URL,
+    username=CONFLUENCE_USERNAME,
+    password=CONFLUENCE_API_TOKEN
+)
+openai.api_key = OPENAI_API_KEY
+
+# Flask app for the chatbot
+app = Flask(__name__)
+
+def fetch_confluence_pages(space):
+    """Fetch and return all Confluence pages in a space."""
+    pages = confluence.get_all_pages_from_space(space=space, start=0, limit=100)
+    page_contents = []
+
+    for page in pages:
+        title = page.get('title')
+        page_id = page.get('id')
+        content = confluence.get_page_by_id(page_id, expand='body.storage')
+        raw_html = content['body']['storage']['value']
+        text = BeautifulSoup(raw_html, 'html.parser').get_text()  # Clean HTML to plain text
+        page_contents.append({'title': title, 'content': text})
+    
+    return page_contents
+
+def search_confluence(query, pages):
+    """Simple keyword search through Confluence data."""
+    results = []
+    for page in pages:
+        if query.lower() in page['content'].lower():
+            results.append(f"**{page['title']}**: {page['content'][:500]}...")  # Limit preview length
+    return "\n\n".join(results) if results else "No relevant information found."
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_query = request.json.get('query', '')
+    space = request.json.get('space', 'YOUR_SPACE')
+
+    # Fetch and search Confluence data
+    pages = fetch_confluence_pages(space)
+    relevant_info = search_confluence(user_query, pages)
+
+    # Generate response using OpenAI GPT
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an assistant for the company's Confluence knowledge base."},
+            {"role": "user", "content": user_query},
+            {"role": "assistant", "content": f"Here is some relevant information:\n{relevant_info}"}
+        ]
+    )
+    gpt_response = response['choices'][0]['message']['content']
+    return jsonify({'response': gpt_response})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
