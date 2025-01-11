@@ -1,5 +1,5 @@
 # Define the file path
-$filePath = "\\nasshare\testfolder1à\data1 \testfile.txt"
+$filePath = "\\nasshare\testfolder1\info123à\semi_info\data1 \testfile.txt"
 
 # Variables to track findings
 $spacePosition = $null
@@ -18,19 +18,20 @@ foreach ($char in $filePath.ToCharArray()) {
     }
 }
 
-# Function to process a folder and search recursively from the adjusted path
+# Function to process and search for a specific file in the upper folder recursively
 function Process-UpperFolder {
     param (
         [string]$path,
         [string]$type
     )
-    # Extract the folder above the detected issue
+    # Extract the folder above the detected issue (one level up)
     $upperFolder = Split-Path -Path (Split-Path -Path $path -Parent) -Parent
     Write-Output "The upper folder before the first $type is: $upperFolder"
     
-    # List files and directories in the upper folder recursively
+    # Check if the upper folder exists
     if (Test-Path $upperFolder) {
-        Write-Output "Searching recursively in the upper folder and subfolders for $type..."
+        Write-Output "Searching recursively in the upper folder and subfolders for '$fileName'..."
+        # Search for the specific file recursively
         $matches = Get-ChildItem -Path $upperFolder -Recurse -Filter $fileName -File -ErrorAction SilentlyContinue
         if ($matches) {
             foreach ($match in $matches) {
