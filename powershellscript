@@ -1,0 +1,61 @@
+# Define the file path
+$filePath = "\\nasshare\testfolder1à\data1 \testfile.txt"
+
+# Variables to track findings
+$spacePosition = $null
+$specialCharPosition = $null
+$fileName = Split-Path -Path $filePath -Leaf
+
+# Loop through each character to identify spaces and special characters
+foreach ($char in $filePath.ToCharArray()) {
+    # Find the first space
+    if ($char -eq " " -and $spacePosition -eq $null) {
+        $spacePosition = $filePath.IndexOf($char)
+    }
+    # Find the first special character
+    if ($char -match "[^a-zA-Z0-9\\:/._-]" -and $specialCharPosition -eq $null) {
+        $specialCharPosition = $filePath.IndexOf($char)
+    }
+}
+
+# Function to process a folder and search recursively from the adjusted path
+function Process-UpperFolder {
+    param (
+        [string]$path,
+        [string]$type
+    )
+    # Extract the folder above the detected issue
+    $upperFolder = Split-Path -Path (Split-Path -Path $path -Parent) -Parent
+    Write-Output "The upper folder before the first $type is: $upperFolder"
+    
+    # List files and directories in the upper folder recursively
+    if (Test-Path $upperFolder) {
+        Write-Output "Searching recursively in the upper folder and subfolders for $type..."
+        $matches = Get-ChildItem -Path $upperFolder -Recurse -Filter $fileName -File -ErrorAction SilentlyContinue
+        if ($matches) {
+            foreach ($match in $matches) {
+                Write-Output "Match found: $($match.FullName)"
+            }
+        } else {
+            Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
+        }
+    } else {
+        Write-Output "The upper folder does not exist: $upperFolder"
+    }
+}
+
+# Handle space in the file path
+if ($spacePosition -ge 0) {
+    $problematicPathSpace = $filePath.Substring(0, $spacePosition)
+    Process-UpperFolder -path $problematicPathSpace -type "space"
+} else {
+    Write-Output "No spaces found in the file path."
+}
+
+# Handle special characters in the file path
+if ($specialCharPosition -ge 0) {
+    $problematicPathSpecialChar = $filePath.Substring(0, $specialCharPosition)
+    Process-UpperFolder -path $problematicPathSpecialChar -type "special character"
+} else {
+    Write-Output "No special characters found in the file path."
+}
