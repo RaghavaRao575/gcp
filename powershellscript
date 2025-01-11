@@ -1,44 +1,48 @@
 # Define the file path
-$filePath = "\\nasshare\testfolder1\info123à\semi_info\data1 \testfile.txt"
+$path = "\\nasshare\testfolder1$\info123à\semi_info\data1 \testfile.txt"
 
 # Variables to track findings
 $spacePosition = $null
 $specialCharPosition = $null
-$fileName = Split-Path -Path $filePath -Leaf
+$fileName = Split-Path -Path $path -Leaf
 
 # Loop through each character to identify spaces and special characters
-foreach ($char in $filePath.ToCharArray()) {
+foreach ($char in $path.ToCharArray()) {
     # Find the first space
     if ($char -eq " " -and $spacePosition -eq $null) {
-        $spacePosition = $filePath.IndexOf($char)
+        $spacePosition = $path.IndexOf($char)
     }
     # Find the first special character
     if ($char -match "[^a-zA-Z0-9\\:/._-]" -and $specialCharPosition -eq $null) {
-        $specialCharPosition = $filePath.IndexOf($char)
+        $specialCharPosition = $path.IndexOf($char)
     }
 }
 
-# Function to process and search for a specific file in the upper folder recursively
+# Function to process a folder and search files with optimized approach
 function Process-UpperFolder {
     param (
         [string]$path,
         [string]$type
     )
-    # Extract the folder above the detected issue (one level up)
-    $upperFolder = Split-Path -Path (Split-Path -Path $path -Parent) -Parent
+    # Extract the folder one level up
+    $upperFolder = Split-Path -Path $path -Parent
     Write-Output "The upper folder before the first $type is: $upperFolder"
-    
-    # Check if the upper folder exists
+
+    # Optimized file search using directory enumeration
     if (Test-Path $upperFolder) {
-        Write-Output "Searching recursively in the upper folder and subfolders for '$fileName'..."
-        # Search for the specific file recursively
-        $matches = Get-ChildItem -Path $upperFolder -Recurse -Filter $fileName -File -ErrorAction SilentlyContinue
-        if ($matches) {
-            foreach ($match in $matches) {
-                Write-Output "Match found: $($match.FullName)"
+        Write-Output "Searching in the upper folder and its subfolders for $type..."
+        try {
+            # Enumerate files in the folder and its subfolders with filters
+            $matches = [System.IO.Directory]::EnumerateFiles($upperFolder, $fileName, 'AllDirectories')
+            if ($matches.Count -gt 0) {
+                foreach ($match in $matches) {
+                    Write-Output "Match found: $match"
+                }
+            } else {
+                Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
             }
-        } else {
-            Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
+        } catch {
+            Write-Output "An error occurred during the search: $_"
         }
     } else {
         Write-Output "The upper folder does not exist: $upperFolder"
@@ -47,7 +51,7 @@ function Process-UpperFolder {
 
 # Handle space in the file path
 if ($spacePosition -ge 0) {
-    $problematicPathSpace = $filePath.Substring(0, $spacePosition)
+    $problematicPathSpace = $path.Substring(0, $spacePosition)
     Process-UpperFolder -path $problematicPathSpace -type "space"
 } else {
     Write-Output "No spaces found in the file path."
@@ -55,7 +59,7 @@ if ($spacePosition -ge 0) {
 
 # Handle special characters in the file path
 if ($specialCharPosition -ge 0) {
-    $problematicPathSpecialChar = $filePath.Substring(0, $specialCharPosition)
+    $problematicPathSpecialChar = $path.Substring(0, $specialCharPosition)
     Process-UpperFolder -path $problematicPathSpecialChar -type "special character"
 } else {
     Write-Output "No special characters found in the file path."
