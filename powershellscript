@@ -1,6 +1,20 @@
 # Define the file path
 $filePath = "\\nasshare\testfolder1$\info123à\semi_info\data1 \testfile.txt"
 
+# Define the specific timestamps in different formats (example formats)
+$specificLastModified = "2025-01-10 14:30"  # Example format
+$specificLastAccessed = "01/10/2025 15:45" # Example format
+$specificCreationDate = "2025-01-09 12:00"  # Example format
+
+# Convert the specific timestamps to DateTime objects in 'yyyy-MM-dd HH:mm' format
+$specificLastModified = [DateTime]::ParseExact($specificLastModified, 'yyyy-MM-dd HH:mm', $null).ToString("yyyy-MM-dd HH:mm")
+$specificLastAccessed = [DateTime]::ParseExact($specificLastAccessed, 'MM/dd/yyyy HH:mm', $null).ToString("yyyy-MM-dd HH:mm")
+$specificCreationDate = [DateTime]::ParseExact($specificCreationDate, 'yyyy-MM-dd hh:mm', $null).ToString("yyyy-MM-dd HH:mm")
+
+Write-Output "Specific Last Modified: $specificLastModified"
+Write-Output "Specific Last Accessed: $specificLastAccessed"
+Write-Output "Specific Creation Date: $specificCreationDate"
+
 # Variables to track findings
 $spacePosition = $null
 $specialCharPosition = $null
@@ -41,13 +55,30 @@ Write-Output "The upper folder before the first $type is: $upperFolder"
 # Enumerate files in the folder and its subfolders with filters
 if (Test-Path $upperFolder) {
     Write-Output "Searching recursively in the upper folder for files and directories..."
-    $matches = Get-ChildItem -Path $upperFolder -Recurse -Filter $fileName -File -ErrorAction SilentlyContinue
-    if ($matches) {
-        foreach ($match in $matches) {
-            Write-Output "Match found: $($match.FullName)"
+    try {
+        # Use EnumerateFiles for better performance
+        $matches = [System.IO.Directory]::EnumerateFiles($upperFolder, $fileName, 'AllDirectories')
+        if ($matches) {
+            foreach ($match in $matches) {
+                # Retrieve file properties
+                $fileInfo = Get-Item -Path $match
+                $lastModified = $fileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm")
+                $lastAccessed = $fileInfo.LastAccessTime.ToString("yyyy-MM-dd HH:mm")
+                $creationDate = $fileInfo.CreationTime.ToString("yyyy-MM-dd HH:mm")
+
+                # Compare timestamps in the specified format
+                if ($lastModified -eq $specificLastModified -and $lastAccessed -eq $specificLastAccessed -and $creationDate -eq $specificCreationDate) {
+                    Write-Output "Match found: $match"
+                    Write-Output "  Creation Date: $creationDate"
+                    Write-Output "  Last Modified: $lastModified"
+                    Write-Output "  Last Accessed: $lastAccessed"
+                }
+            }
+        } else {
+            Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
         }
-    } else {
-        Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
+    } catch {
+        Write-Output "An error occurred while enumerating files: $_"
     }
 } else {
     Write-Output "The upper folder does not exist: $upperFolder"
