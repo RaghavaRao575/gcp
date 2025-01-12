@@ -1,66 +1,54 @@
 # Define the file path
-$path = "\\nasshare\testfolder1$\info123à\semi_info\data1 \testfile.txt"
+$filePath = "\\nasshare\testfolder1$\info123à\semi_info\data1 \testfile.txt"
 
 # Variables to track findings
 $spacePosition = $null
 $specialCharPosition = $null
-$fileName = Split-Path -Path $path -Leaf
+$fileName = Split-Path -Path $filePath -Leaf
 
 # Loop through each character to identify spaces and special characters
-foreach ($char in $path.ToCharArray()) {
+foreach ($char in $filePath.ToCharArray()) {
     # Find the first space
     if ($char -eq " " -and $spacePosition -eq $null) {
-        $spacePosition = $path.IndexOf($char)
+        $spacePosition = $filePath.IndexOf($char)
     }
     # Find the first special character
     if ($char -match "[^a-zA-Z0-9\\:/._-]" -and $specialCharPosition -eq $null) {
-        $specialCharPosition = $path.IndexOf($char)
+        $specialCharPosition = $filePath.IndexOf($char)
     }
 }
 
-# Function to process a folder and search files with optimized approach
-function Process-UpperFolder {
-    param (
-        [string]$path,
-        [string]$type
-    )
-    # Extract the folder one level up
-    $upperFolder = Split-Path -Path $path -Parent
-    Write-Output "The upper folder before the first $type is: $upperFolder"
+# Determine which issue occurs first
+if ($spacePosition -ne $null -and ($specialCharPosition -eq $null -or $spacePosition -lt $specialCharPosition)) {
+    # Space occurs first, handle space logic
+    Write-Output "Space detected first in the file path."
+    $problematicPath = $filePath.Substring(0, $spacePosition)
+    $type = "space"
+} elseif ($specialCharPosition -ne $null) {
+    # Special character occurs first, handle special character logic
+    Write-Output "Special character detected first in the file path."
+    $problematicPath = $filePath.Substring(0, $specialCharPosition)
+    $type = "special character"
+} else {
+    Write-Output "No spaces or special characters found in the file path."
+    return
+}
 
-    # Optimized file search using directory enumeration
-    if (Test-Path $upperFolder) {
-        Write-Output "Searching in the upper folder and its subfolders for $type..."
-        try {
-            # Enumerate files in the folder and its subfolders with filters
-            $matches = [System.IO.Directory]::EnumerateFiles($upperFolder, $fileName, 'AllDirectories')
-            if ($matches.Count -gt 0) {
-                foreach ($match in $matches) {
-                    Write-Output "Match found: $match"
-                }
-            } else {
-                Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
-            }
-        } catch {
-            Write-Output "An error occurred during the search: $_"
+# Get the upper folder for the detected issue
+$upperFolder = Split-Path -Path $problematicPath -Parent
+Write-Output "The upper folder before the first $type is: $upperFolder"
+
+# Enumerate files in the folder and its subfolders with filters
+if (Test-Path $upperFolder) {
+    Write-Output "Searching recursively in the upper folder for files and directories..."
+    $matches = Get-ChildItem -Path $upperFolder -Recurse -Filter $fileName -File -ErrorAction SilentlyContinue
+    if ($matches) {
+        foreach ($match in $matches) {
+            Write-Output "Match found: $($match.FullName)"
         }
     } else {
-        Write-Output "The upper folder does not exist: $upperFolder"
+        Write-Output "No matching files found for '$fileName' in the upper folder or its subfolders."
     }
-}
-
-# Handle space in the file path
-if ($spacePosition -ge 0) {
-    $problematicPathSpace = $path.Substring(0, $spacePosition)
-    Process-UpperFolder -path $problematicPathSpace -type "space"
 } else {
-    Write-Output "No spaces found in the file path."
-}
-
-# Handle special characters in the file path
-if ($specialCharPosition -ge 0) {
-    $problematicPathSpecialChar = $path.Substring(0, $specialCharPosition)
-    Process-UpperFolder -path $problematicPathSpecialChar -type "special character"
-} else {
-    Write-Output "No special characters found in the file path."
+    Write-Output "The upper folder does not exist: $upperFolder"
 }
