@@ -1,34 +1,10 @@
-# Function to detect and parse the date format
-function Parse-Date {
-    param (
-        [string]$DateString,
-        [string[]]$Formats
-    )
-    foreach ($format in $Formats) {
-        try {
-            return [datetime]::ParseExact($DateString, $format, $null)
-        } catch {
-            # Continue to the next format
-        }
-    }
-    throw "Unable to parse date: $DateString"
-}
+# Example dates
+$date1 = "2025-01-12 23:30:00"   # January 12, 2025, 11:30 PM
+$date2 = "01/10/2025 10:00 AM"   # January 10, 2025, 10:00 AM
 
-# Define the dates and possible formats
-$date1 = "2025-01-12 15:30:00"   # Example 1
-$date2 = "01/12/2025 03:00 PM"   # Example 2
-
-# List of possible formats
-$formats = @(
-    "yyyy-MM-dd HH:mm:ss",   # Format for $date1
-    "MM/dd/yyyy hh:mm tt",   # Format for $date2
-    "dd-MM-yyyy HH:mm",      # Additional formats
-    "yyyy/MM/dd HH:mm:ss"
-)
-
-# Detect and parse dates
-$parsedDate1 = Parse-Date -DateString $date1 -Formats $formats
-$parsedDate2 = Parse-Date -DateString $date2 -Formats $formats
+# Parse the dates
+$parsedDate1 = [datetime]::ParseExact($date1, "yyyy-MM-dd HH:mm:ss", $null)
+$parsedDate2 = [datetime]::ParseExact($date2, "MM/dd/yyyy hh:mm tt", $null)
 
 # Calculate the difference
 $timeDifference = $parsedDate1 - $parsedDate2
@@ -40,4 +16,4 @@ $newDate = $parsedDate1.Add($timeDifference)
 Write-Output "Original Date1: $parsedDate1"
 Write-Output "Original Date2: $parsedDate2"
 Write-Output "Time Difference: $timeDifference"
-Write-Output "New Date (Date1 + Difference): $newDate"
+Write-Output "New Date (Date1 + Difference): $newDate
