@@ -1,0 +1,19 @@
+# Example dates
+$date1 = "2025-01-12 23:30:00"   # January 12, 2025, 11:30 PM
+$date2 = "01/10/2025 10:00 AM"   # January 10, 2025, 10:00 AM
+
+# Parse the dates
+$parsedDate1 = [datetime]::ParseExact($date1, "yyyy-MM-dd HH:mm:ss", $null)
+$parsedDate2 = [datetime]::ParseExact($date2, "MM/dd/yyyy hh:mm tt", $null)
+
+# Calculate the difference
+$timeDifference = $parsedDate1 - $parsedDate2
+
+# Add the difference to $date1
+$newDate = $parsedDate1.Add($timeDifference)
+
+# Output the results
+Write-Output "Original Date1: $parsedDate1"
+Write-Output "Original Date2: $parsedDate2"
+Write-Output "Time Difference: $timeDifference"
+Write-Output "New Date (Date1 + Difference): $newDate"
