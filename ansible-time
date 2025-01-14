@@ -1,0 +1,22 @@
+---
+- name: Subtract duration from datetime
+  hosts: localhost
+  gather_facts: false
+  vars:
+    base_time: "2025-01-21 11:20:00"
+    human_duration: "30 minutes 00 seconds"
+  tasks:
+    - name: Subtract time using command
+      command: >
+        python3 -c "
+        from datetime import datetime, timedelta;
+        base_time = '{{ base_time }}';
+        human_duration = '{{ human_duration }}';
+        minutes, seconds = map(int, [human_duration.split()[0], human_duration.split()[2]]);
+        result = datetime.strptime(base_time, '%Y-%m-%d %H:%M:%S') - timedelta(minutes=minutes, seconds=seconds);
+        print(result.strftime('%Y-%m-%d %H:%M:%S'))"
+      register: python_result
+
+    - name: Debug updated time
+      debug:
+        msg: "Updated time is: {{ python_result.stdout }}"
