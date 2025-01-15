@@ -4,16 +4,19 @@
   gather_facts: false
   vars:
     base_time: "2025-01-21 11:20:00"
-    human_duration: "30 minutes 00 seconds"
+    human_duration: "1 Hours 2 minutes 10 Seconds"
+
   tasks:
-    - name: Subtract time using command
+    - name: Calculate updated time using Python
       command: >
-        python3 -c "from datetime import datetime, timedelta; 
-        base_time = '{{ base_time }}'; 
-        human_duration = '{{ human_duration }}'; 
-        minutes, seconds = map(int, [human_duration.split()[0], human_duration.split()[2]]);
-        result = datetime.strptime(base_time, '%Y-%m-%d %H:%M:%S') - timedelta(minutes=minutes, seconds=seconds);
-        print(result.strftime('%Y-%m-%d %H:%M:%S'))"
+        python3 -c "from datetime import datetime, timedelta;
+        import re;
+        b, d = '{{ base_time }}', '{{ human_duration }}';
+        h = int(re.search(r'(\d+)\s*Hours', d).group(1)) if 'Hours' in d else 0;
+        m = int(re.search(r'(\d+)\s*minutes', d).group(1)) if 'minutes' in d else 0;
+        s = int(re.search(r'(\d+)\s*Seconds', d).group(1)) if 'Seconds' in d else 0;
+        r = datetime.strptime(b, '%Y-%m-%d %H:%M:%S') - timedelta(hours=h, minutes=m, seconds=s);
+        print(r.strftime('%Y-%m-%d %H:%M:%S'))"
       register: python_result
 
     - name: Debug updated time
