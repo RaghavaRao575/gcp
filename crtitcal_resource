@@ -1,54 +1,27 @@
----
-- name: URL Health Check and Email Notification
-  hosts: localhost
-  gather_facts: no
-  vars:
-    urls:
-      - "https://example.com"
-      - "https://google.com"
-      - "https://nonexistentwebsite.fake"
+- name: Generate HTML table
+  set_fact:
+    html_table: |
+      <html>
+      <body>
+      <h2>URL Health Check Report</h2>
+      <table border="1" cellspacing="0" cellpadding="5" style="border: 2px solid red; border-collapse: collapse;">
+        <tr style="background-color: lightgray;">
+          <th>URL</th>
+          <th>Status</th>
+        </tr>
+        {% for result in url_results.results %}
+        <tr>
+          <td>{{ result.item }}</td>
+          <td style="color: {{ 'green' if result.status == 200 else 'red' }};">
+            {{ 'Healthy' if result.status == 200 else 'Unhealthy' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+      
+      <br><br>  <!-- Empty lines added here -->
 
-  tasks:
-    - name: Check each URL
-      uri:
-        url: "{{ item }}"
-        status_code: 200
-        timeout: 10
-      register: url_results
-      ignore_errors: yes
-      loop: "{{ urls }}"
-
-    - name: Generate HTML table
-      set_fact:
-        html_table: |
-          <html>
-          <body>
-          <h2>URL Health Check Report</h2>
-          <table border="1" cellspacing="0" cellpadding="5">
-            <tr>
-              <th>URL</th>
-              <th>Status</th>
-            </tr>
-            {% for result in url_results.results %}
-            <tr>
-              <td>{{ result.item }}</td>
-              <td style="color: {{ 'green' if result.status == 200 else 'red' }};">
-                {{ 'Healthy' if result.status == 200 else 'Unhealthy' }}
-              </td>
-            </tr>
-            {% endfor %}
-          </table>
-          </body>
-          </html>
-
-    - name: Send email with results
-      community.general.mail:
-        host: smtp.example.com  # Change to your SMTP server
-        port: 587
-        username: your_email@example.com
-        password: your_password
-        to: recipient@example.com
-        subject: "URL Health Check Report"
-        body: "{{ html_table }}"
-        subtype: html
-      delegate_to: localhost
+      <p>Regards,</p>
+      <p>IT Team</p>
+      </body>
+      </html>
