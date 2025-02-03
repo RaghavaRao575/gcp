@@ -1,7 +1,54 @@
-I would like to formally recognize the exceptional contributions of [Employee Name], who has consistently demonstrated technical excellence and proven to be a critical resource for our team. [Employee Name] possesses advanced expertise in automation tools and frameworks, particularly with Ansible and Python, and has been pivotal in delivering scalable, efficient, and high-quality automation solutions.
+---
+- name: URL Health Check and Email Notification
+  hosts: localhost
+  gather_facts: no
+  vars:
+    urls:
+      - "https://example.com"
+      - "https://google.com"
+      - "https://nonexistentwebsite.fake"
 
-Their ability to develop, optimize, and implement automation scripts has significantly streamlined workflows, reduced manual intervention, and improved operational efficiency. These efforts have resulted in faster deployments, enhanced reliability, and cost-effective management of resources.
+  tasks:
+    - name: Check each URL
+      uri:
+        url: "{{ item }}"
+        status_code: 200
+        timeout: 10
+      register: url_results
+      ignore_errors: yes
+      loop: "{{ urls }}"
 
-In addition to their technical contributions, [Employee Name] excels in designing and executing robust automation pipelines, leveraging their in-depth knowledge of infrastructure-as-code (IaC) principles and best practices. Their contributions have been instrumental in achieving high-impact deliverables, enabling the team to meet demanding deadlines while maintaining the highest standards of quality and performance.
+    - name: Generate HTML table
+      set_fact:
+        html_table: |
+          <html>
+          <body>
+          <h2>URL Health Check Report</h2>
+          <table border="1" cellspacing="0" cellpadding="5">
+            <tr>
+              <th>URL</th>
+              <th>Status</th>
+            </tr>
+            {% for result in url_results.results %}
+            <tr>
+              <td>{{ result.item }}</td>
+              <td style="color: {{ 'green' if result.status == 200 else 'red' }};">
+                {{ 'Healthy' if result.status == 200 else 'Unhealthy' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+          </body>
+          </html>
 
-Given their expertise in automation engineering and overall strategic mindset, I firmly believe [Employee Name] is a critical asset to the organization. I highly recommend acknowledging their significant impact and exploring opportunities to further leverage their skills for the organization’s success.
+    - name: Send email with results
+      community.general.mail:
+        host: smtp.example.com  # Change to your SMTP server
+        port: 587
+        username: your_email@example.com
+        password: your_password
+        to: recipient@example.com
+        subject: "URL Health Check Report"
+        body: "{{ html_table }}"
+        subtype: html
+      delegate_to: localhost
