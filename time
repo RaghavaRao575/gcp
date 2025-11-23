@@ -20,32 +20,33 @@ Write-Output "New Date (Date1 + Difference): $newDate
 
 
 I want you to implement the correct Dell EMC PowerMax / VMAX WWN-to-Device-ID decoding logic.
-Use the following exact rules:
+Use the exact algorithm below — do not change the steps:
 
-Take the last 4 hexadecimal characters of the WWN/NAA value.
-Example: WWN ending "3038".
+Take the last 4 hexadecimal characters of the WWN/NAA.
+Example: “3038”.
 
 Split those 4 characters into two bytes.
-Example: "3038" → "30" and "38".
+Example: “3038” → “30” and “38”.
 
 Convert each byte from hex → ASCII character.
 Example:
-0x30 → ASCII '0'
-0x38 → ASCII '8'
+0x30 → '0'
+0x38 → '8'
 
 Combine the ASCII characters into a two-character string.
 Example: "0" + "8" = "08".
 
 Interpret that two-character string as a hex number.
-Example: "08" → hex value 0x08.
+Example: "08" → 0x08.
 
-Add the array offset 0x1000 to this value.
-Example: 0x1000 + 0x08 = 0x0108.
+Add the offset 0x0100 to this value.
+Example:
+0x0100 + 0x08 = 0x0108.
 
-The final value (padded to 4 hex digits) is the Device ID.
-Example: Device ID = "0108".
+Zero-pad the result to 4 hex digits.
+Example: “0108”.
 
-Apply this logic for all WWN endings (ASCII-encoded ones such as “4143”, “3246”, “4537”, etc.) so that:
+This logic must always produce results like:
 
 3038 → 0108
 
@@ -54,3 +55,5 @@ Apply this logic for all WWN endings (ASCII-encoded ones such as “4143”, “
 4143 → 01AC
 
 4537 → 01E7
+
+3944 → 019D
