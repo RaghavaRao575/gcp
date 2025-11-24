@@ -19,41 +19,62 @@ Write-Output "Time Difference: $timeDifference"
 Write-Output "New Date (Date1 + Difference): $newDate
 
 
-I want you to implement the correct Dell EMC PowerMax / VMAX WWN-to-Device-ID decoding logic.
-Use the exact algorithm below — do not change the steps:
+You are given EMC / PowerMax FA (front-end) WWPNs. Your task is to reverse-engineer and produce a deterministic decoder that outputs the following fields in a single CSV row:
 
-Take the last 4 hexadecimal characters of the WWN/NAA.
-Example: “3038”.
+WWPN,Array Serial No,Made In,Array Model,Dir,Proc,Port
 
-Split those 4 characters into two bytes.
-Example: “3038” → “30” and “38”.
+Few-Shot Examples (Ground Truth)
 
-Convert each byte from hex → ASCII character.
-Example:
-0x30 → '0'
-0x38 → '8'
+Example 1
+Input WWPN: 5000097210310005
+Output CSV:
+5000097210310005,HK120203136,USA,PowerMax 8500,1,D,5
 
-Combine the ASCII characters into a two-character string.
-Example: "0" + "8" = "08".
+Example 2
+Input WWPN: 5000097210310006
+Output CSV:
+5000097210310006,HK120203136,USA,PowerMax 8500,1,D,6
 
-Interpret that two-character string as a hex number.
-Example: "08" → 0x08.
+Example 3
+Input WWPN: 5000097210310007
+Output CSV:
+5000097210310007,HK120203136,USA,PowerMax 8500,1,D,7
 
-Add the offset 0x0100 to this value.
-Example:
-0x0100 + 0x08 = 0x0108.
+Your Task
 
-Zero-pad the result to 4 hex digits.
-Example: “0108”.
+Using the examples above, infer the decoding logic and produce a complete decoder.
 
-This logic must always produce results like:
+You must:
 
-3038 → 0108
+Identify and explain the bit/nibble ranges used for each field (hex nibble index 0 = MSB).
 
-3246 → 012F
+Show how the WWPN is converted from hex → binary → extracted fields.
 
-4143 → 01AC
+Provide:
 
-4537 → 01E7
+A concise algorithm (pseudocode)
 
-3944 → 019D
+A complete Python implementation (no external libraries)
+
+Validate your decoder by running it on all three examples and reproducing the exact CSV outputs.
+
+Additional Requirements:
+
+Treat the provided examples as authoritative ground truth.
+
+If alternate interpretations exist, list them and describe which exact bit ranges produce them.
+
+If you need more samples to infer the model, ask for them — but first attempt decoding using only the examples.
+
+Output Format (strict):
+
+Your response must contain only:
+
+Explanation of bit/nibble ranges
+
+Pseudocode
+
+Python implementation
+
+Verification runs for the three examples
+No greetings, no filler text, no unrelated commentary.
